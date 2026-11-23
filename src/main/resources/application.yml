@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: rag-knowledge-base
+  datasource:
+    url: jdbc:postgresql://localhost:5433/knowledge_base
+    username: rag_user
+    password: "1234"
+  sql:
+    init:
+      mode: always   # runs schema.sql on every startup (it is safe to re-run)
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+server:
+  port: 2000
+
+rag:
+  # Week 2: chunking (words, because 1 token is roughly 0.75 words)
+  chunking:
+    size-words: 380
+    overlap-words: 40
+  # Week 3: free local embeddings with Ollama
+  ollama:
+    base-url: http://localhost:11434
+  embedding:
+    model: nomic-embed-text
+    dimensions: 768     # must match VECTOR(768) in schema.sql
+    batch-size: 16      # chunks sent to Ollama per request
