@@ -28,3 +28,7 @@ rag:
     model: nomic-embed-text
     dimensions: 768     # must match VECTOR(768) in schema.sql
     batch-size: 16      # chunks sent to Ollama per request
+  # Week 4: semantic search
+  retrieval:
+    top-k: 5            # how many chunks to return by default
+    min-score: 0.4      # chunks below this cosine similarity are dropped (tune by testing!)
