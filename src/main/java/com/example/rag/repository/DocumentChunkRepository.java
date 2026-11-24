@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.example.rag.dto.PendingChunk;
+import com.example.rag.dto.SearchResult;
 import com.example.rag.util.VectorUtils;
 
 @Repository
@@ -67,5 +68,29 @@ public class DocumentChunkRepository {
     public int countAll() {
         Integer n = jdbc.queryForObject("SELECT COUNT(*) FROM document_chunks", Integer.class);
         return n == null ? 0 : n;
+    }
+
+    // ---------- Week 4: similarity search ----------
+
+    /**
+     * Returns the topK chunks closest to the query vector.
+     * "<=>" is cosine DISTANCE (0 = identical), so score = 1 - distance (1 = identical).
+     * ORDER BY the distance expression + LIMIT is what lets PostgreSQL use the HNSW index.
+     */
+    public List<SearchResult> searchSimilar(String queryVectorLiteral, int topK) {
+        return jdbc.query(
+                "SELECT id, source, chunk_index, content, "
+                        + "       1 - (embedding <=> ?::vector) AS score "
+                        + "FROM document_chunks "
+                        + "WHERE embedding IS NOT NULL "
+                        + "ORDER BY embedding <=> ?::vector "
+                        + "LIMIT ?",
+                (rs, rowNum) -> new SearchResult(
+                        rs.getLong("id"),
+                        rs.getString("source"),
+                        rs.getInt("chunk_index"),
+                        rs.getString("content"),
+                        rs.getDouble("score")),
+                queryVectorLiteral, queryVectorLiteral, topK);
     }
 }
