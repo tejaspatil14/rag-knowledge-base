@@ -105,9 +105,9 @@ public class OllamaLlmClient implements LlmClient {
                 ANSWER_SCHEMA,
                 Map.of(
                         "temperature", temperature,
-                        "num_ctx", 4096,
+                        "num_ctx", 2048,
                         "num_gpu", 0,
-                        "num_predict", 1024
+                        "num_predict", 256
                 )
         );
 

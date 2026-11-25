@@ -1,0 +1,99 @@
+:root {
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1c1f26;
+  --muted: #6b7280;
+  --border: #e2e5ea;
+  --accent: #2f6fed;
+  --accent-text: #ffffff;
+  --user: #e8efff;
+  --bot: #f1f3f6;
+  --danger: #c0392b;
+  --ok: #1e8e5a;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a;
+    --card: #1d2026;
+    --text: #e8eaee;
+    --muted: #9aa1ad;
+    --border: #2d323b;
+    --accent: #5b8cff;
+    --accent-text: #0e1116;
+    --user: #26334f;
+    --bot: #262a32;
+    --danger: #ff7a6b;
+    --ok: #4cc38a;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+.app { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+.header h1 { margin: 0; font-size: 1.6rem; }
+.header p { margin: 4px 0 0; }
+
+.status { display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.status-online .dot { background: var(--ok); }
+.status-offline .dot { background: var(--danger); }
+
+.layout { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.card h2 { margin: 0 0 14px; font-size: 1.1rem; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+
+.dropzone {
+  width: 100%; padding: 22px 12px; border: 2px dashed var(--border); border-radius: 10px;
+  background: transparent; color: var(--muted); font: inherit; cursor: pointer;
+}
+.dropzone:hover, .dropzone-active { border-color: var(--accent); color: var(--text); }
+.dropzone:disabled { cursor: progress; opacity: 0.7; }
+
+.notice { margin: 12px 0 0; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; word-break: break-word; }
+.notice-ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+.notice-error { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+
+.doc-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.doc-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-top: 1px solid var(--border); word-break: break-word; }
+.link-danger { background: none; border: none; color: var(--danger); cursor: pointer; font: inherit; padding: 4px; }
+.link-danger:hover { text-decoration: underline; }
+
+.chat { display: flex; flex-direction: column; min-height: 520px; }
+.messages { flex: 1; overflow-y: auto; max-height: 60vh; display: flex; flex-direction: column; gap: 14px; padding-right: 4px; }
+.exchange { display: flex; flex-direction: column; gap: 8px; }
+
+.bubble { padding: 10px 14px; border-radius: 12px; max-width: 92%; word-break: break-word; }
+.bubble-user { background: var(--user); align-self: flex-end; }
+.bubble-bot { background: var(--bot); align-self: flex-start; }
+.bubble-error { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); align-self: flex-start; }
+.answer { margin: 0 0 10px; white-space: pre-wrap; }
+
+.confidence { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 10px; }
+.meter { flex: 1; max-width: 140px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.meter-fill { height: 100%; background: var(--accent); }
+
+.sources ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 0.8rem; padding: 3px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); }
+
+.ask-form { display: flex; gap: 8px; margin-top: 16px; }
+.ask-form input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; }
+.ask-form input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.ask-form button { padding: 10px 20px; border: none; border-radius: 8px; background: var(--accent); color: var(--accent-text); font: inherit; font-weight: 600; cursor: pointer; }
+.ask-form button:disabled { opacity: 0.5; cursor: not-allowed; }
