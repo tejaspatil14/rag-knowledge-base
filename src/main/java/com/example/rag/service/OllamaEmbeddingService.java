@@ -6,11 +6,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -69,8 +71,10 @@ public class OllamaEmbeddingService implements EmbeddingService {
                 sleep(attempt * 1000L); // simple backoff: 1s, 2s, 3s
             }
         }
-        throw new IllegalStateException("Could not get embeddings from Ollama at " + baseUrl
-                + ". Is Ollama running, and did you run: ollama pull " + model, last);
+        throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                "Could not get embeddings from Ollama at " + baseUrl
+                        + ". Is Ollama running, and did you run: ollama pull " + model,
+                last);
     }
 
     private List<float[]> toVectors(EmbedResponse response, int expectedCount) {

@@ -1,3 +1,4 @@
+
 package com.example.rag.service;
 
 import java.time.Instant;
@@ -21,16 +22,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 
-/**
- * The whole RAG pipeline for one question:
- * retrieve chunks -> build prompt -> ask the LLM -> validate the JSON -> build the response.
- */
 @Service
 public class AnswerService {
 
-    static final String NO_ANSWER = "I don't know based on the provided documents.";
-    private static final Logger log = LoggerFactory.getLogger(AnswerService.class);
-    private static final int MAX_ATTEMPTS = 2; // first try + one retry
+    static final String NO_ANSWER =
+            "I don't know based on the provided documents.";
+
+    private static final Logger log =
+            LoggerFactory.getLogger(AnswerService.class);
+
+    private static final int MAX_ATTEMPTS = 2;
+    private static final int MAX_FALLBACK_SOURCES = 3;
 
     private final RetrievalService retrievalService;
     private final PromptBuilder promptBuilder;
@@ -38,8 +40,13 @@ public class AnswerService {
     private final ObjectMapper objectMapper;
     private final Validator validator;
 
-    public AnswerService(RetrievalService retrievalService, PromptBuilder promptBuilder,
-                         LlmClient llmClient, ObjectMapper objectMapper, Validator validator) {
+    public AnswerService(
+            RetrievalService retrievalService,
+            PromptBuilder promptBuilder,
+            LlmClient llmClient,
+            ObjectMapper objectMapper,
+            Validator validator) {
+
         this.retrievalService = retrievalService;
         this.promptBuilder = promptBuilder;
         this.llmClient = llmClient;
@@ -48,51 +55,141 @@ public class AnswerService {
     }
 
     public AskResponse ask(String question) {
-        List<SearchResult> chunks = retrievalService.search(question, null, null);
 
-        // Nothing relevant found: do not even call the LLM. This is the strongest protection against hallucination.
+        List<SearchResult> chunks =
+                retrievalService.search(question, null, null);
+
+        // Do not call the LLM when no relevant chunks are retrieved.
         if (chunks.isEmpty()) {
-            return new AskResponse(question, NO_ANSWER, List.of(), 0.0, Instant.now());
+            return new AskResponse(
+                    question,
+                    NO_ANSWER,
+                    List.of(),
+                    0.0,
+                    Instant.now()
+            );
         }
 
-        PromptBuilder.Prompt prompt = promptBuilder.build(question, chunks);
+        PromptBuilder.Prompt prompt =
+                promptBuilder.build(question, chunks);
+
         LlmAnswer answer = generateValidAnswer(prompt);
 
-        return new AskResponse(question, answer.answer(), toSources(answer, chunks),
-                answer.confidence(), Instant.now());
+        List<SourceRef> sources =
+                toSources(answer, chunks);
+
+        return new AskResponse(
+                question,
+                answer.answer(),
+                sources,
+                answer.confidence(),
+                Instant.now()
+        );
     }
 
-    private LlmAnswer generateValidAnswer(PromptBuilder.Prompt prompt) {
-        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-            String raw = llmClient.generateJson(prompt.system(), prompt.user());
+    private LlmAnswer generateValidAnswer(
+            PromptBuilder.Prompt prompt) {
+
+        for (int attempt = 1;
+             attempt <= MAX_ATTEMPTS;
+             attempt++) {
+
+            String raw = llmClient.generateJson(
+                    prompt.system(),
+                    prompt.user()
+            );
+
             try {
-                LlmAnswer parsed = objectMapper.readValue(raw, LlmAnswer.class);
-                Set<ConstraintViolation<LlmAnswer>> violations = validator.validate(parsed);
+                LlmAnswer parsed =
+                        objectMapper.readValue(raw, LlmAnswer.class);
+
+                Set<ConstraintViolation<LlmAnswer>> violations =
+                        validator.validate(parsed);
+
                 if (violations.isEmpty()) {
                     return parsed;
                 }
-                ConstraintViolation<LlmAnswer> first = violations.iterator().next();
-                log.warn("LLM answer failed validation (attempt {}/{}): {} {}",
-                        attempt, MAX_ATTEMPTS, first.getPropertyPath(), first.getMessage());
+
+                ConstraintViolation<LlmAnswer> first =
+                        violations.iterator().next();
+
+                log.warn(
+                        "LLM answer failed validation (attempt {}/{}): {} {}",
+                        attempt,
+                        MAX_ATTEMPTS,
+                        first.getPropertyPath(),
+                        first.getMessage()
+                );
+
             } catch (JsonProcessingException e) {
-                log.warn("LLM returned invalid JSON (attempt {}/{}): {}", attempt, MAX_ATTEMPTS, e.getOriginalMessage());
+
+                log.warn(
+                        "LLM returned invalid JSON (attempt {}/{}): {}",
+                        attempt,
+                        MAX_ATTEMPTS,
+                        e.getOriginalMessage()
+                );
             }
         }
-        throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                "The language model did not return a valid answer. Please try again.");
+
+        throw new ResponseStatusException(
+                HttpStatus.BAD_GATEWAY,
+                "The language model did not return a valid answer. Please try again."
+        );
     }
 
-    /** Sources come from OUR retrieved chunks, so the model can never invent a source. */
-    private List<SourceRef> toSources(LlmAnswer answer, List<SearchResult> chunks) {
+    /**
+     * Build source references from our retrieved chunks.
+     * The LLM cannot invent document names or chunk indexes.
+     */
+    private List<SourceRef> toSources(
+            LlmAnswer answer,
+            List<SearchResult> chunks) {
+
+        // No sources for an answer that explicitly says "I don't know".
+        if (answer.answer().trim().equalsIgnoreCase(NO_ANSWER)) {
+            return List.of();
+        }
+
+        // First preference: use valid chunk numbers selected by the LLM.
         Set<Integer> valid = new LinkedHashSet<>();
-        for (Integer n : answer.usedChunks()) {
-            if (n != null && n >= 1 && n <= chunks.size()) {
-                valid.add(n);
+
+        if (answer.usedChunks() != null) {
+            for (Integer n : answer.usedChunks()) {
+                if (n != null && n >= 1 && n <= chunks.size()) {
+                    valid.add(n);
+                }
             }
         }
-        return valid.stream().map(n -> {
-            SearchResult c = chunks.get(n - 1);
-            return new SourceRef(c.source(), c.chunkIndex(), Math.round(c.score() * 10000) / 10000.0);
-        }).toList();
+
+        if (!valid.isEmpty()) {
+            return valid.stream()
+                    .map(n -> toSourceRef(chunks.get(n - 1)))
+                    .toList();
+        }
+
+        // Fallback: use the highest-ranked retrieved context chunks.
+        // These are retrieval references, not independently verified citations.
+        log.warn(
+                "LLM returned no valid usedChunks. Using top {} retrieved chunks as source references.",
+                MAX_FALLBACK_SOURCES
+        );
+
+        return chunks.stream()
+                .limit(MAX_FALLBACK_SOURCES)
+                .map(this::toSourceRef)
+                .toList();
+    }
+
+    private SourceRef toSourceRef(SearchResult chunk) {
+
+        double roundedScore =
+                Math.round(chunk.score() * 10000) / 10000.0;
+
+        return new SourceRef(
+                chunk.source(),
+                chunk.chunkIndex(),
+                roundedScore
+        );
     }
 }

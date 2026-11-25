@@ -17,6 +17,10 @@ server:
   port: 2000
 
 rag:
+  # Week 6: simple API-key protection. Leave empty to DISABLE auth (local development only).
+  # Set it with the environment variable RAG_API_KEY, never commit a real key.
+  security:
+    api-key: ${RAG_API_KEY:}
   # Week 2: chunking (words, because 1 token is roughly 0.75 words)
   chunking:
     size-words: 380
@@ -30,10 +34,10 @@ rag:
     batch-size: 16      # chunks sent to Ollama per request
   # Week 4: semantic search
   retrieval:
-    top-k: 5            # how many chunks to return by default
+    top-k: 5
     min-score: 0.4      # keep the value you tuned in Week 4
   # Week 5: free local LLM with Ollama
   llm:
-    model: llama3.2:3b  # if your PC is slow or has little RAM, try llama3.2:1b
-    num-ctx: 8192       # context window. Ollama's small default would silently cut off your chunks!
-    temperature: 0.0    # 0 = most factual and repeatable
+    model: llama3.2:3b
+    num-ctx: 8192
+    temperature: 0.0

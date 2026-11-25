@@ -3,14 +3,38 @@ services:
   db:
     image: pgvector/pgvector:pg16
     container_name: rag-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: knowledge_base
       POSTGRES_USER: rag_user
-      POSTGRES_PASSWORD: "1234"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rag_pass}
     ports:
-      - "5433:5432"
+      - "15432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rag_user -d knowledge_base"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    container_name: rag-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "2000:2000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/knowledge_base
+      SPRING_DATASOURCE_USERNAME: rag_user
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-rag_pass}
+      RAG_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      RAG_API_KEY: ${RAG_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   pgdata:

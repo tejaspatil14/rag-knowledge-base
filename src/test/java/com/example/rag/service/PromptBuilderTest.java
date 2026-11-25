@@ -18,8 +18,8 @@ class PromptBuilderTest {
 
         PromptBuilder.Prompt prompt = new PromptBuilder().build("Which river?", chunks);
 
-        assertTrue(prompt.user().contains("[1] (source: a.pdf)"));
-        assertTrue(prompt.user().contains("[2] (source: b.pdf)"));
+        assertTrue(prompt.user().contains("[1] (source: a.pdf, similarity: 0.9000)"));
+        assertTrue(prompt.user().contains("[2] (source: b.pdf, similarity: 0.8000)"));
         assertTrue(prompt.user().contains("Ganga flows here"));
         assertTrue(prompt.user().endsWith("Question: Which river?"));
         assertTrue(prompt.system().contains("ONLY"));

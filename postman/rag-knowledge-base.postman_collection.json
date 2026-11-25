@@ -1,0 +1,210 @@
+{
+  "info": {
+    "name": "RAG Knowledge Base",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:2000"
+    },
+    {
+      "key": "apiKey",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Upload document",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/documents",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "documents"
+          ]
+        },
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "List documents",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/documents",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "documents"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Delete document",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/documents?source=yourfile.pdf",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "documents"
+          ],
+          "query": [
+            {
+              "key": "source",
+              "value": "yourfile.pdf"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Embedding status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/embeddings/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "embeddings",
+            "status"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Run embeddings",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/embeddings/run",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "embeddings",
+            "run"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Search",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/search",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "search"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Which rivers flow through Uttarakhand?\",\n  \"topK\": 5\n}"
+        }
+      }
+    },
+    {
+      "name": "Ask",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/ask",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "ask"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"Which major rivers flow through Uttarakhand?\"\n}"
+        }
+      }
+    }
+  ]
+}
